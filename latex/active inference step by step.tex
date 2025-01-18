@@ -1,0 +1,607 @@
+\documentclass[10pt]{article}
+
+\usepackage[T1]{fontenc} % font encoding
+\usepackage[utf8]{inputenc} % input encoding
+\usepackage[english,italian]{babel} 
+\usepackage{comment}
+
+% Tools for equations
+\usepackage{mathtools}
+\usepackage{amsfonts}
+\usepackage{array,amsmath, bm} 
+\usepackage{tabularx}
+\usepackage{amsthm}
+
+%Import the natbib package and sets a bibliography  and citation styles
+\usepackage{natbib}
+\bibliographystyle{abbrvnat}
+
+\begin{document}
+
+% =======================
+\section{Theoretical Framework} 
+\label{Chapter1}
+
+Our brain constantly receives incomplete and often ambiguous informations from sensory inputs, that are a noisy link between the brain and the external world. 
+
+While Helmholtz, in the late 19th century, was the first to propose a theory treating the brain as an inference machine \citep{Helmholtz1925}, several works in the past few decades have further explored the idea of perception as an ongoing process of updating an inner generative model that infers the not accesible (hidden) causes of input stimuli \citep{Ballard1983, Knill2004, Doya2007}.
+One of the earliest concrete frameworks of this kind to describe the neural dynamics underlying perception in the visual cortex is the predictive coding model proposed by Rao and Ballard \citep{Rao1999}, which was later extended by Friston's free energy principle \citep{friston2006, friston2010}, which, in particular, takes action into account, thus creating a closed-loop scheme of perception.
+
+This chapter provides a comprehensive introduction to the active inference framework, first introducing the work presented in \citep{Rao1999}, and then showing how Karl Friston placed it within the broader free energy principle, focusing in particular on the continuous time formulation (integrating in particular the excellent reviews \citep{Buckley2017, Bogacz2017, Millidge2021}).
+
+\subsection{Rao and Ballard predictive coding model}
+\label{sec:rao_model}
+A receptive field is defined \citep{Alonso2009} as a portion of sensory space that can elicit neuronal responses when stimulated. 
+In the case of visual stimuli, receptive fields are two-dimensional region in the visual space that correlates with the activity of certain neurons. 
+For example, cortical layers 2 and 3 in some mammalian visual cortexes, such as those of the monkeys \citep{Hubel1968}, contain many neurons that respond optimally to line segments of a certain length (Fig. \ref{fig:rf}). However, these neurons often exhibit reduced or eliminated responses when the same stimulus extends beyond their classical receptive fields. This ‘extra-classical’ effect generally occurs when stimulus properties at the center of the receptive field match those in the surrounding areas (Fig. \ref{fig:extra_rf}).
+
+\begin{comment}
+	\begin{figure}[!t]
+	\centering
+    \begin{subfigure}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{receptive_field_commented.png}
+        \caption{An example of a stimulus within a receptive field that might produce some activity in the corresponding neuron}
+        \label{fig:rf}    
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{extra_receptive_field.png}
+        \caption{Example of a stimulus that extends beyond the neuron's classical receptive field}
+        \label{fig:extra_rf}    
+    \end{subfigure}
+	\end{figure}
+\end{comment}
+
+Using a specifically designed hierarchical neural network model \citep{Rao1999}, the authors show that such extra-classical receptive field effects could arise directly from the predictive coding structure of the network. The model proposes that neural networks learn the statistical regularities of the natural world and signal deviations from these regularities to higher processing centers, which reduce redundancy by removing the predictable, and thus redundant, components of the input signal.
+
+\subsection{The model}
+The following section describes the model using a different notation than in \citep{Rao1999} in order to maintain consistency with the later sections.
+
+Let us begin by considering as sensory input a grey-scale image with $S$ pixels, denoted as a vector $\bm{s} = \lbrace{ s \rbrace}_{i=1}^{S}$. 
+Assuming that the cortex attempts to represent the image in terms of hypothetical causes, represented by the $K$-dimensional vector $\bm{\mu} = \lbrace{ \mu_i \rbrace}_{i=1}^{K}$, we can express this relationship with the following equation:
+\begin{equation}
+    \bm{s} = g(\bm{\mu}) + \mathcal{N}(\bm{s}; 0, \Sigma_{s})
+    \label{eq:pc_layer1}
+\end{equation}
+Here $g(\bm{\mu}) = U \cdot \bm{\mu} $ is the mapping function between sensory inputs and the state $\bm{\mu}$.
+In terms of a neural network, the coefficients $\mu_i$ correspond to the activities or firing rates of $K$ neurons, whereas the columns of the linear operator $U$ are the basis vectors for generating the images and correspond to the synaptic weights of the neurons. The second term of Eq. \ref{eq:pc_layer1} is a noise term described by a Gaussian distribution with zero mean and $\Sigma_s$ variance. 
+
+Because the dendritic arbors of neurons can only span a finite spatial extent, sensory inputs are divided into three overlapping Gaussian-windowed image patches\footnote{in the original work the authors set an horizontal offset of 5 pixels}, each of which is used as input (Fig. \ref{fig:rao_ballard_scheme}) to three identical modules (Eq. \ref{eq:pc_layer1}) which comprise the first level of the network.
+
+Above this level, the model includes a second one. It is assumed that it represents more abstract stimulus properties, represented by the activity of $L$ neurons $\bm{\nu} = \lbrace{ \nu_i \rbrace}_{i=1}^{L}$ related to the ones of the lower level through the following equation:
+\begin{equation}
+    \bm{\mu} = f(\bm{\nu}) + \mathcal{N}(\bm{\mu}; 0, \Sigma_{\nu}) 
+    \label{eq:pc_layer2}
+\end{equation}
+The top-down prediction $f(\bm{\nu}) = U_{\nu} \cdot \bm{\nu} $ has a similar structure to $g$, and it is also accompanied by a noise term with a Gaussian distribution with zero mean and variance $\Sigma_{\nu}$
+
+\begin{comment}
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.4\textwidth]{rao_ballard_scheme.png}
+    \caption{Schematic illustration of the model as a Bayesian network. Each module of the first level can only generate a local portion of the input image. Specifically, each patch represents the receptive field of the corresponding level-1 module neurons. Conversely, since the second level generates all three sets of $\bm{\mu}$, the receptive field for these neurons becomes wider (the whole input size in this particular case). This phenomenon of receptive fields getting larger climbing up the hierarchy has also been observed in the occipitotemporal visual pathway \citep{Fellman1991}.}
+    \label{fig:rao_ballard_scheme}
+\end{figure}
+\end{comment}
+
+The goal is to estimate, for each image presented, the coefficients $\bm{\mu}$ and $\bm{\nu}$ and, on a longer time scale, learn appropriate basis vectors $U$ and $U_{\nu}$ to describe efficiently a wide range of input images. 
+Since the noise terms in Eq. \ref{eq:pc_layer1} and \ref{eq:pc_layer2} have been assumed Gaussian, it is possible to write the following optimization function:
+\begin{equation}
+    E_l = \frac{1}{2} (\bm{s} - g(\bm{\mu}))^T \Sigma_{s}^{-1} (\bm{s} - g(\bm{\mu})) + \frac{1}{2} (\bm{\mu} - f(\bm{\nu}))^T \Sigma_{\nu}^{-1} (\bm{\mu} - f(\bm{\nu}))
+\end{equation}
+It is important to note that this quantity is the negative logarithm of the probability of the data given the parameters of the model (negative log-likelihood) and that it is a weighted sum of quadratic forms of level-1 and level-2 prediction errors.
+Taking into account also Gaussian prior distributions for $\bm{\mu}$ and $U$, and using again their negative logarithms, it is possible to obtain the final optimization funciton
+\begin{equation}
+    E = E_l + \frac{1}{2 \Sigma_{\mu}} \sum_i \mu_i ^2 + \frac{1}{2 \Sigma_{U}} \gamma \sum_{i,j} U_{i,j}^2
+    \label{eq:pc_E_with_priors}
+\end{equation}
+where $\Sigma_{\mu}$ and $\Sigma_{U}$ are the variances of the respective Gaussian prior distributions. 
+Note that, from a Bayesian perspective, maximizing $E$ is equivalent to maximize the posterior probability of the model parameters given the input data.
+
+An optimal estimate of $\bm{\mu}$ can be obtained through a classical gradient descent on $E$ with respect to $\bm{\mu}$
+\begin{equation}
+    \begin{split}
+        \dot{\bm{\mu}} &=  -k_{\mu}\frac{\partial E}{\partial \bm{\mu}} = \\
+                             &= k_{\mu} \left[ U^{T}\frac{(\bm{s} - g(\bm{\mu}) )}{\Sigma_s} - \frac{(\bm{\mu} - f(\bm{\nu}))}{\Sigma_{\nu}} - \frac{\bm{\mu}}{\Sigma_{\mu}} \right]
+    \end{split}
+    \label{eq:learning_mu}
+\end{equation}
+where $k_\mu$ is a learning rate.
+Therefore, in order to modify $\bm{\mu}$ toward the optimal estimate, the $(\bm{s} - g(\bm{\mu}))$ and the $(\bm{\mu} - f(\bm{\nu}))$ residual errors are needed.
+\begin{comment}
+\begin{figure}[!h]
+	\centering
+	\includegraphics[width=0.7\textwidth]{message_passing.png}
+	\caption{General architecture of the hierarchical predictive coding model. At each hierarchical level, feedback pathways carry predictions of neural activity at the lower level, whereas feedforward pathways carry residual errors between the predictions and actual neural activity. These errors are used by the predictive estimator at each level to correct its current estimate of the input signal and generate the next prediction. Figure taken and adapted from \citep{Rao1999}}
+	\label{fig:mess_pass}
+\end{figure}
+\end{comment}
+
+Each level in this hierarchical model network thus, attempts to predict the responses at the next lower level via feedback connections (Fig. \ref{fig:mess_pass}). The error between this prediction and the actual response is then sent back to the higher level via feedforward connections. This error signal is used to correct the estimate of the input signal at each
+level. The prediction and error-correction cycles occur concurrently throughout the hierarchy, so that top-down information influences lower-level estimates, and bottom-up information influences higher-level estimates of the input signal. Lower levels operate on smaller spatial scales, whereas higher levels estimate signal properties at larger scales because a higher-level module predicts and estimates the responses of several lower-level modules (for example, three in Fig. \ref{fig:rao_ballard_scheme}). Thus, the effective receptive field size of units increases progressively until the highest level, where the receptive field spans the entire input image. The underlying assumption here is that the external environment generates natural signals hierarchically via interacting hidden physical causes (object attributes such as shape, texture and luminance) at multiple spatial and temporal scales. 
+The goal of a visual system then becomes the optimal estimation of these hidden causes at each scale for each input image and, on a longer time scale, the learning of the parameters governing the hierarchical generative model. In terms of the synaptic learning rule in particular, this correspond to the optimal estimate of the matrix $U$, that can be done agin by performing the gradient descent
+\begin{equation}
+    \dot{U} = - k_U \frac{\partial E}{\partial U} = k_U \left[ \frac{(\bm{s} - g(\bm{\mu}) )}{\Sigma_s} \bm{\mu}^T - \frac{U}{\Sigma_{U}} \right]
+    \label{eq:learnin_u}
+\end{equation}
+with $k_U$ that is, again, a learning rate.
+
+The estimation of $\bm{\nu}$ and $U_{\nu}$ is analogous to what has just been done for $\bm{\mu}$ and $U_{\nu}$, with the difference that the terms corresponding to the respective prior distributions miss. This is the case where the prior distribution has been set to Gaussian with arbitrary high variance.
+
+Given the hierarchical organization of the visual cortex and the almost always reciprocal nature of cortico-cortical connections, the model just presented proposes the following hypothesis: feedback connections from a higher area (e.g., V2) to a lower area (e.g., V1) carry predictions of expected neural activity in V1, while feedforward connections transmit to V2 the residual activity in V1 that was not predicted by V2. In order to test this hypothesis, this three-level hierarchical network of predictive estimators was trained using image patches extracted from five natural images (see Fig. \ref{fig:natural_images}). The rationale behind this choice was that the response properties of visual neurons may be largely influenced by the statistical properties of natural images. 
+
+\begin{comment}
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=\textwidth]{natural_images_with_rf.png}
+    \caption{Natural images used to train the model. In the bottom right corner are represented relative sizes ($16 \times 16$ and $16 \times 26$) of level-1 and level-2 receptive fields. These images were first filtered using a center-surround difference-of-Gaussians operator to approximate processing at the levels of the retina and the LGN \citep{Olshausen1997}}
+    \label{fig:natural_images}
+\end{figure}
+\end{comment}
+
+The training were perfermed by maximizing the posterior probability of generating the observed data: for any given input, the network converged to a set of neuronal responses that were optimal for predicting that specific input following the first-order differential equation of Eq. \ref{eq:learning_mu}. These responses were subsequently utilized to adapt the synaptic basis vectors following Eq. \ref{eq:learnin_u}. The same description applies to each level of the hierarchy, with each level predicting the inputs at its lower level using its set of learned basis vectors and, on a slower time scale, adapting these basis vectors to enable more accurate prediction of the inputs in the future.
+
+\subsection{Results}
+Overall, this approach allowed the network to learn a hierarchical internal model of its natural image inputs.
+\begin{comment}
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[width=0.7\textwidth]{pr_extra_classical_responses.png}
+    \caption{Endstopping behaviour of model layer-1 error-neurons. The first row of plots shows the responses of the 32 error detecting model neurons in the central level-1 module in response to the short bar (left box in Fig. \ref{fig:extra_rf}). The second row shows the same quantity, but this time whene the model is presented with the bar that span beyond the classical receptive field (right box in Fig. \ref{fig:extra_rf}). Figure taken and adapted from \citep{Rao1999}.}
+    \label{fig:extraclassical_responses}
+\end{figure}
+\end{comment}
+Given a general input image, the initial predictions at any given level
+are based on an arbitrary random combination of the basis vectors, giving large error signals. To minimize this error, the network converges to the responses that best predict the current input by subtracting the prediction from the input (via inhibition) and propagating the residual error signal to the neurons at the next level, which integrate this error (like in Eq. \ref{eq:learning_mu}) and generate a better prediction.
+In practice, the error signal in a biological system can be carried by error detecting neurons, which send feedforward connections from the lower level to the higher level. 
+In the visual cortex, feedforward connections to a higher area generally arise from the superficial layers (such as layer 2/3). 
+A relatively large number of neurons in layer 2/3 of striate cortex (V1) show endstopping and related extra-classical effects. To ascertain whether these observed neuronal responses can be functionally interpreted as residual error signals, responses of these level-1 error-detecting neurons where recorded when exposed to the image of a short bar lying within their receptive field (Fig. \ref{fig:extra_rf}). 
+The solid box in the left panel represents the receptive field size of the level-1 neurons, whereas the dotted box represents the level-2 receptive field. The panels in Fig. \ref{fig:extraclassical_responses} instead show the two components that determine the error signal. Many of the error-detecting neurons showed significant non-zero responses, demonstrating that feedback from level 2 could not completely predict the responses at level 1.
+On the other hand, when the bar stimulus extends beyond the classical receptive field into the flanking regions (right box in Fig. \ref{fig:extra_rf}), the same error-detecting neurons showed little or no response because the predictions from level 2 were much more accurate, with prediction errors close to zero. 
+The reason lies in the fact that the network was trained on natural images, where short bars rarely occur in isolation. Rather, a bar in a small region of an image is usually part of a longer bar that extends into neighboring regions. Because the network was optimized for natural image statistics, the most accurate predictions are generated when the input’s properties match those of these natural images. The continuation of the bar into the surrounding region provides the necessary context for the bar in the center to be predicted, much as in the case of retinal center-surround prediction mechanisms. Without this contextual information in the
+surrounding region, the higher level cannot accurately predict
+the bar in the center. The short bar thus elicits a relatively large response from the error-detecting neurons as compared to the longer bar.
+
+\subsection{The free energy principle}
+
+A significant breakthrough in the field of predictive coding theory occurred when it was realized that the predictive coding algorithm could be framed as an approximation of Bayesian inference, utilizing Gaussian generative models \citep{Friston2005}.
+Friston's approach, importantly, redefines the predominantly heuristic model proposed by Rao and Ballard using the framework of variational Bayesian inference. This not only allows for a comprehensive theoretical understanding of the algorithm but it also strengthen its connection to the broader concept of the Bayesian Brain \citep{Knill2004, Doya2007}.
+Friston demonstrated that the energy function in Rao and Ballard's model can be interpreted as a variational free-energy, which is minimized through variational inference. This connection establishes that predictive coding directly engages in approximate Bayesian inference to deduce the underlying causes of sensory signals, thereby offering a mathematically precise characterization of the Helmholtzian notion of perception as inference.
+
+% possibile box sul perchè un agente ha questo goal
+
+To formalize this let us assume that the goal of an agent is to determine the probability distribution of a latent state $\bm{x}$ given some sensory inputs $\bm{s}$:
+
+\begin{equation}
+p(\bm{x}|\bm{s}) = \frac{p(\bm{x},\bm{s})}{p(\bm{s})} = \frac{p(\bm{s}|\bm{x})p(\bm{x})}{p(\bm{s})}
+\end{equation}
+with
+\begin{itemize}
+
+\item $P(\bm{x},\bm{s})$ \emph{joint density}, beliefs about the states assumed to be encoded by the agent. In the framework it is referred to as \emph{generative model}.
+
+\item $p(\bm{x}|\bm{s})$ \emph{Posterior}, i.e. probability distribution of hidden causes $x$ given observed sensory data; 
+
+\item $p(\bm{s}|\bm{x})$ \emph{Likelihood}, i.e. organism's assumptions about sensory input $\bm{s}$ given the hidden causes $\bm{x}$;
+
+\item $p(\bm{x})$ \emph{Prior}, i.e. agent's beliefs about hidden causes before that $\bm s$ are received;
+
+\item $p(\bm s)=\int p(\bm s|\bm x)p(\bm x) d\bm x $ \emph{marginal likelihood} (normalization factor). It is also referred to as \emph{evidence} or \emph{model evidence}, since it effectively scores the likelihood of the data under a given model averaged over all possible values of the model parameters.
+
+\end{itemize}
+
+The first problem with this exact Bayesian scheme is that calculating $p(\bm s)$ is often impossible. However, since the agent does not necessarily need to compute the complete posterior distribution, but only needs to find the hidden state, its goal is to find:
+\begin{equation}
+    \arg \max_{\bm{x}} p(\bm x|\bm s)
+\end{equation}
+However, this goal may also present some challenges. In fact, the distribution may not have a standard shape or have summary statistics. 
+
+Another biologically plausible technique to approximate the posterior $p(\bm x | \bm s)$ consist in using an auxiliary distribution $q(\bm x)$, called \emph{recognition density}, that has to be optimized to became a good approximation of the posterior.  
+
+In order to do this the Kullback-Leibler  divergence is minimized:
+\begin{equation}
+\begin{split}
+D_{KL} (\, q(\bm x)\, ||\, p(\bm x|\bm s)\, ) & = \int q(\bm x) \ln \frac{q(\bm x)}{p(\bm x|\bm s)} d\bm x \\
+                                  & = \int q(\bm x) \ln \frac{q(\bm x)p(\bm s)}{p(\bm x,\bm s)} d\bm x \\
+                                  & = \int q(\bm x) \ln \frac{q(\bm x)}{p(\bm x,\bm s)} d\bm x + \ln p(\bm s) \int q(\bm x) d\bm x \\
+                                  & = \mathcal{F}+ \ln p(\bm s)
+\end{split}
+\end{equation}
+
+where
+\begin{itemize}
+
+\item the term
+\begin{equation}
+\mathcal{F}\equiv \int q(\bm x) \ln \frac{q(\bm x)}{p(\bm x,\bm s)}d\bm x = \left< \ln q(\bm x) \right>_{q} - \left< \ln p(\bm x,\bm s) \right>_{q}
+\label{eq:vfe_simple_form}
+\end{equation} 
+is the \emph{variational free energy}\footnote{In machine learning the negative of this quantity is called evidence lower bound (ELBO), and is maximized instead.}, a quantity that depends on the recognition density and the knowledge about the environment i.e. the joint density $p(\bm s, \bm x) = p(\bm s|\bm x)p(\bm x)$ that for now we are assuming the agent has. 
+\item $\ln p(\bm s)$ is the \emph{log-evidence}, a term independent with respect to the recognition density $q(\bm x)$. Thus, with fixed sensory inputs, minimizing $\mathcal{F}$ with respect to $q(\bm x)$ will in turn minimize the $D_{KL} (\, q(\bm x)\, ||\, p(\bm x|\bm s)\, )$ (in general minimizing $\mathcal{F}$ results in a reduction of $D_{KL} (\, q(\bm x)\, ||\, p(\bm x|\bm s)\, )$).
+
+\end{itemize}
+
+To have a better intuition about $\mathcal{F}$, it is possible to re-write Eq. \ref{eq:vfe_simple_form} in the following ways
+\begin{equation}
+    \begin{split}
+        \mathcal{F} & \equiv \int q(\bm x) \ln \frac{q(\bm x)}{p(\bm x,\bm s)}d\bm x = \int q(\bm x) \ln \frac{q(\bm x)}{p(\bm s| \bm x) p(\bm x)} d\bm x\\
+        & = \underbrace{D_{KL}(\, q(\bm x) || p(\bm x) \,)}_{\text{\emph{complexity}}} - \underbrace{\left<\ln p(\bm s | \bm x) \right>_{q}}_{\text{\emph{accuracy}}} \\
+        & = \underbrace{D_{KL}(\, q(\bm x) || p(\bm x | \bm s) \,)}_{\text{\emph{divergence}}} - \underbrace{\ln p(\bm s)}_{\text{\emph{evidence}}} 
+    \end{split}
+    \label{eq:fe_formulations}
+\end{equation}
+Each of these formulations of variational free energy offers useful intuitions about what free energy minimization means. 
+
+The second line of Eq. \ref{eq:fe_formulations} emphasizes the interpretation of free energy minimization as finding the best explanation for sensory data, which must be the simplest (i.e. minimally complex) explanation that is able to accurately account for the data (Occam's razor): a negative value of a term called \emph{accuracy} is present, that contains a likelihood that has to be maximized, with a Kullback-Leibler divergence term called \emph{complexity} which penalizes deviations from the Bayesian prior. 
+In many machine learning algorithms this decomposition is often utilized and explicitly optimized \citep{Kingma2013}.
+
+The final line instead expresses the free energy as a bound on negative log \emph{evidence}. 
+The free energy in fact is an upper bound of this quantity, where the bound is the divergence between $q(\bm x)$ and the posterior probability $p(\bm x | \bm s)$. 
+This offers a formal motivation for perceptual inference as one way to lower free energy by optimizing our approximate posterior $q(\bm x)$ as much as possible. 
+Moreover, as we will see in Sec. \ref{sec:action}, perceptual inference is not the only way to minimize free energy. 
+It can be also possible to change the log evidence term through acting to change sensory data. This decomposition is interesting from a cognitive perspective, since minimizing divergence and maximizing evidence map to the two complementary sub-objectives of perception and action, respectively.
+
+\subsection{Predictive coding as variational inference}
+\label{sec:vfe_1d}
+For the sake of clarity, we will build the framework in the one dimensional case, explaining in subsequent chapters, when necessary, the corresponding variables and functions in higer dimensions.
+
+\subsubsection{Laplace approximation}
+\label{sec:laplace}
+
+Often optimizing $\mathcal{F}$ for arbitrary $q(x)$ is particularly complex. Moreover, it is assumed that neural activity encode a parametrised model -- with finite numbers of parameters.
+For these reasons, a common approximation is to assume that the recognition density take a Gaussian form. 
+
+Assuming that $q(x)$ has a peak at point $\mu$, the Taylor-expansion of the logarithm around this peak is
+\begin{equation}
+\ln q(x) \simeq \ln q(\mu) - \frac{1}{2} \frac{(x-\mu)^2}{\Sigma} 
+\end{equation}
+with
+\begin{equation}
+\frac{1}{\Sigma} = - \frac{\partial^{2} }{\partial x^2} \ln q(x) \bigg\rvert_{x=\mu} 
+\end{equation}
+Now it is possible to approximate the probability distribution $q(x)$ with the distribution
+\begin{equation}
+\mathcal{N}(x;\mu, \Sigma) = \frac{1}{\sqrt{ 2 \pi \Sigma}} \, e^{\frac{(x-\mu)^2}{2 \Sigma}}
+\end{equation}
+i.e. a Gaussian distribution that has been normalized using the factor $q(\mu) \sqrt{2 \pi \Sigma }$.\\
+Now the variational free energy, starting from Eq. \ref{eq:vfe_simple_form}, can be written as follows
+\begin{equation}
+\begin{split}
+\mathcal{F}   &= \left< \ln q(\bm x) \right>_{q} - \left< \ln p(\bm x,\bm s) \right>_{q}  \\
+    &\approx \int \mathcal{N}(x;\mu,\Sigma) (-\frac{1}{2} \ln (2 \pi \Sigma) - \frac{(x-\mu)^2}{2 \Sigma} ) d x - \int \mathcal{N}(x;\mu,\Sigma) \ln p(x,s) d x \\
+    & = -\frac{1}{2} \ln (2 \pi \Sigma) - \frac{1}{2 \Sigma} \int \mathcal{N}(x;\mu,\Sigma) (x-\mu)^2  d x - \int \mathcal{N}(x;\mu,\Sigma) \ln p(x,s) d x \\
+    & = -\frac{1}{2} \ln (2 \pi \Sigma) - \frac{1}{2} - \int \mathcal{N}(x;\mu,\Sigma) \ln p(x,s) d x
+\end{split}
+\end{equation}
+To obtain an analytical model, additional simplifications and assumptions are required in order to evaluate the final term\footnote{Later we will discuss the implications of this issue for the interpretation of brain functions.}. 
+
+Assuming that $p(x,s)$ is a smooth function of $x$, it is possible to consider the integrated function appreciably non-zero only near the peak of the $q$. So, using a second order Taylor expansion of the $L(x,s) \equiv - \ln p(x,s)$ around $x=\mu$ we ca write
+\begin{equation}
+L(x,s) \approx L(\mu,s) + \left[ \frac{dL(x,s)}{dx} \right]_{x=\mu} (x-\mu) + \frac{1}{2} \left[ \frac{d^2L(x,s)}{dx^2} \right]_{x=\mu} (x-\mu)^2 \\
+\end{equation}
+This implies that
+\begin{equation}
+    \begin{split}
+        - \int \mathcal{N}(x;\mu,\Sigma) \ln p(x,s) d x \approx & \int \mathcal{N}(x;\mu,\Sigma) \Big\lbrace L(\mu,s) + \left[ \frac{dL(x,s)}{dx} \right]_{x=\mu} (x-\mu) \, + \\
+        & + \frac{1}{2} \left[ \frac{d^2L(x,s)}{dx^2} \right]_{x=\mu} (x-\mu)^2 \Big\rbrace d x \\
+        = & \, L(\mu,s) + \left[ \frac{dL(x,s)}{dx} \right]_{x=\mu} \left( \int \mathcal{N}(x;\mu,\Sigma) x \, dx - \mu \right) + \\
+        & + \frac{1}{2} \left[ \frac{d^2L(x,s)}{dx^2} \right]_{x=\mu} \int \mathcal{N}(x;\mu,\Sigma) (x-\mu)^2 \, dx\\
+        = & \, L(\mu,s) + \frac{1}{2} \left[ \frac{d^2L(x,s)}{dx^2} \right]_{x=\mu} \Sigma
+    \end{split}
+\end{equation}
+Now is possible to rewrite the variational free energy as
+\begin{equation}
+\mathcal{F}(\mu, \Sigma, s) \approx L(\mu, s) + \frac{1}{2}\left( \left[ \frac{d^2L(x,s)}{dx^2} \right]_{x=\mu} \Sigma - \ln (2 \pi \Sigma) -1 \right)
+\end{equation}
+with $L(\mu, s)$ said \emph{Laplace-encoded energy}, and the variational free energy written as a function and not anymore as a functional.
+
+Since the goal is to minimize the Kullback-Leibler divergence trough the minimization of the variational free energy, is possible to simplify further removing the $\Sigma$ dependency taking the derivative with respect this and imposing $\frac{d\mathcal{F}}{d\Sigma}=0$
+\begin{equation}
+\frac{d\mathcal{F}}{d\Sigma}= \frac{1}{2} \left( \left[ \frac{d^2L(x,s)}{dx^2} \right]_{x=\mu} - \frac{1}{\Sigma} \right) = 0
+\end{equation}
+\begin{equation}
+\Rightarrow \Sigma = \left[ \frac{d^2L(x,s)}{dx^2} \right]_{x=\mu}^{-1} \equiv \Sigma^{\ast}
+\label{eq:variance_laplace}
+\end{equation}
+
+The final form of the variational free energy is then
+\begin{equation}
+\mathcal{F} \approx L(\mu,s) - \frac{1}{2} \ln \left( 2 \pi \Sigma^{\ast} \right) \, ,
+\end{equation}
+that can be further simplified if the $L$ function has a second order polynomial form\footnote{as we will see in Sec.(\ref{sec:G})}, that implies that the second-order derivative of $L$ with respect to $x$ results in a constant factor that is useless and can be ignored\footnote{ let us remind that the final goal is to minimize $\mathcal{F}$ with respect to $x$}, leading to 
+\begin{equation}
+\mathcal{F} \approx L(\mu,s)
+\label{eqn:encoded_F}
+\end{equation}
+
+\paragraph{Simple static model with entropy term}
+Starting from a joint density with the following form
+\begin{equation}
+p(x,s) = p(s | x) p(x) = \mathcal{N}(s;f_0(x),\Sigma_s) \mathcal{N}(x;\nu,\Sigma_{x}) 
+\label{eq:gm}
+\end{equation}
+it is possible to write the Laplace-encoded energy
+\begin{equation}
+\begin{split}
+L(\mu,s) & = - \ln p(s|\mu) - \ln p(\mu)  \\
+		 & = \frac{1}{2} \ln (2 \pi \Sigma_{s}) + \frac{(s-g(\mu))^2}{2 \Sigma_{s}} + \frac{1}{2} \ln (2 \pi \Sigma_{x}) + \frac{(\mu-\nu)^2}{2 \Sigma_{x}} \\
+		 & = \frac{\varepsilon_{s}^2}{2 \Sigma_{s}} + \frac{\varepsilon_{\mu}^2}{2 \Sigma_{x}} + \frac{1}{2} \ln \left( \Sigma_{s} \Sigma_{x} \right) + \ln (2 \pi) \, ,
+\end{split}
+\end{equation}
+and consequently the variational free energy
+\begin{equation}
+\mathcal{F} \approx \frac{1}{2} \left[\frac{\varepsilon_{s}^2}{\Sigma_{s}} + \frac{\varepsilon_{\mu}^2}{ \Sigma_{x}} + \ln \left( \Sigma_{s} \Sigma_{x} \right) -\ln (2 \pi \Sigma^*) \right] \, .
+\end{equation}
+where in this case $\Sigma^*$ is equal to
+\begin{equation}
+\begin{split}
+		\Sigma^* & \equiv \left[ \frac{d^2 L(x,s)}{dx^2} \right]^{-1}_{x=\mu} = \frac{d}{d \mu} \left[\frac{\varepsilon_{s}}{\Sigma_{s}} \frac{d \varepsilon_{s}}{d \mu} + \frac{\varepsilon_{\mu}}{\Sigma_{x}} \frac{d \varepsilon_{\mu}}{d \mu} \right] \\
+				& = \frac{d}{d \mu} \left[ - \frac{\varepsilon_{s}}{\Sigma{_s}} \frac{d g(\mu)}{d \mu} + \frac{\varepsilon_{\mu}}{\Sigma_{x}} \right] \\
+				& = \frac{1}{\Sigma_s} \left( \frac{d g(\mu)}{d \mu} \right)^2 - \frac{\varepsilon_s}{\Sigma_s} \frac{d^2 g(\mu)}{d \mu^2} + \frac{1}{\Sigma_x}
+	\end	{split}
+\end{equation}
+Now this term can be neglected if, and only if, $d g(\mu) / d \mu = 0$ and you are not modifying $p(x)$ precisions.
+
+\paragraph{About Laplace Approximation}
+Another approximation that can be done, essentially identical to the Laplace approximation considering that it arrives at the same expression for the variational free energy, is the one that consider the recognition density equal to dirac-delta distribution
+\begin{equation}
+    q(x) \approx \delta (x - \mu)
+\end{equation}
+The main difference between these approximations is the value of the resulting entropy term of Eq. \ref{eq:vfe_simple_form}, which under the dirac-delta assumion is a null term, while under the Laplace approximation is nonzero but constant with respect to parameters being optimized. 
+Both this procedures lead to Eq.(\ref{eqn:encoded_F}), that would imply that that the brain represents the hidden state only through the most likely cause, and nothing else about the recognition distribution. However, as we are going to see, the uncertainties will be encoded directly in the form of the joint density.
+
+\subsection{Building the generative model and variational free energy minimization}
+\label{sec:G}
+Thanks to the Laplace approximation, we have been able to write the variational free energy in terms of the Laplace-encoded energy $L(\mu,s)$, that in turn depends on the joint density $p(x, s)$. In this function are encoded brain beliefs about the environmental causes of the sensory input and the beliefs \emph{a priori} about environmental states.
+
+Therefore, what needs to be built is a \emph{generative model}, that is a model in which is encoded how the brain believe the world works and where all the hypothesis about the agent's behaviour are formalized.
+
+\subsubsection{Static Model}
+
+Let us consider a simple case of an agent that, as generative model, represents the hidden state of the environment through the variable $x$, which in turn cause the data received by a sensory channel $s$. As we have seen in Sec.(\ref{sec:laplace}), the brain will represent the environment only through the inner state $\mu$, and what remains to do is to explicit the mapping between brain states and sensory data that will allows to make explicit the joint density.
+
+Assuming that the agent believes that its sensory input are generated by
+\begin{equation}
+s = g(x) + \mathcal{N}(s;0,\Sigma_s) \, ,
+\label{eq:input}
+\end{equation}
+with $g$ being a generic function that expresses the relation between states and sensory input, to which is summed a noise represented by the normal distribution with zero mean and variance $\Sigma_s$. This assumption means that we can write
+\begin{equation}
+p(s|x) = \mathcal{N}(s;g(x),\Sigma_s) = \frac{1}{\sqrt{ 2 \pi \Sigma_{s}}} \, e^{-\frac{(s-g(x))^2}{2 \Sigma_{s}}} \, .
+\end{equation}
+Moreover let us also assume that the agent also has a prior knowledge regarding the environmental state given by $\nu$ that is linked with the inner state through
+\begin{equation}
+x = \nu + \mathcal{N}(x;0,\Sigma_{x})
+\end{equation}
+\begin{equation}
+\Rightarrow p(x) = \mathcal{N}(x;\nu,\Sigma_{x}) =\frac{1}{\sqrt{ 2 \pi \Sigma_{x}}} \, e^{-\frac{(x-\nu)^2}{2 \Sigma_{x}}} \, .
+\end{equation}
+
+Now that we have specified a likelihood and a prior, is possible to determine the joint density
+\begin{equation}
+p(x,s) = p(s | x) p(x)
+\label{eq:gm}
+\end{equation}
+and consequently the Laplace-encoded energy
+\begin{equation}
+\begin{split}
+L(\mu,s) & = - \ln p(s|\mu) - \ln p(\mu)  \\
+		 & = \frac{1}{2} \ln (2 \pi \Sigma_{s}) + \frac{(s-g(\mu))^2}{2 \Sigma_{s}} + \frac{1}{2} \ln (2 \pi \Sigma_{x}) + \frac{(\mu-\nu)^2}{2 \Sigma_{x}} \\
+		 & = \frac{\varepsilon_{s}^2}{2 \Sigma_{s}} + \frac{\varepsilon_{\mu}^2}{2 \Sigma_{x}} + \frac{1}{2} \ln \left( \Sigma_{s} \Sigma_{x} \right) + \ln (2 \pi) \, ,
+\end{split}
+\end{equation}
+where the $\varepsilon$ terms are said \emph{prediction errors} and measure the discrepancy respectively between the actual sensory data $s$ and the outcome of its prediction $g(x)|_{x=\mu}$ and between $\mu$ itself and its prior expectation $\nu$. Therefore the former $\varepsilon_{s}$ describes sensory prediction errors, the latter $\varepsilon_{\mu}$ model prediction errors (i.e. how brain states deviate from their expectation) and each one is weighted with the the corresponding inverse of the variance $\Sigma_{s}^{-1}$ and $\Sigma_{x}^{-1}$ (which are often said \emph{precisions}). \\
+As said at the end of Sec.(\ref{sec:laplace}), since the $L$ function has a quadratic form, it is possible to ignore all the terms apart from the following
+\begin{equation}
+\mathcal{F} \approx \frac{1}{2} \left[\frac{\varepsilon_{s}^2}{\Sigma_{s}} + \frac{\varepsilon_{\mu}^2}{ \Sigma_{\mu}} + \ln \left( \Sigma_{s} \Sigma_{\mu} \right) \right] \, .
+\end{equation}
+
+The last thing that remains to do is to find a biologically plausible mechanism to minimize variational free energy.\\
+In the free energy principle framework, it is proposed that the innate dynamics of the neural activity evolves in such a way that it implements a gradient descent scheme on the variational free energy. \\
+In particular, in the static model case, a brain state $\mu$ is updated between two (internal) sequential steps $t$ and $t+dt$ as
+\begin{equation}
+    \dot{\mu} = - k_{\mu} \frac{\partial \mathcal{F}}{\partial \mu} = k_{\mu}\left[ \frac{\varepsilon_s}{\Sigma_s}\frac{\partial g(\mu)}{\partial \mu} - \frac{\varepsilon_{\mu}}{\Sigma_{\mu}} \right],
+\end{equation}
+with $k$ learning rate parameter that has to be tuned and $\frac{\partial \mathcal{F}}{\partial \mu}$ goes to zero when a minimum of the $\mathcal{F}$ function is reached.
+
+In many practical cases, it is possible to relax the assumption that the agent has a fixed generative model (Eq. \ref{eq:gm}), and let it learn in parallel while inferring $\mu$. Writing the $g$ function with an explicit parameter $g(x;\theta_g)$ and expressing the state $x$ not only as a prior given by $\nu$ but a more generic $f(\nu; \theta_{f})$, it is possible to write the update rules also of the model parameters $\theta_g$ and $\theta_f$
+\begin{equation}
+    \dot{\theta}_g = - k_{g} \frac{\partial \mathcal{F}}{\partial \theta_{g}} = k_{g} \frac{\varepsilon_g}{\Sigma_{s}}\frac{\partial g(\mu;\theta_g)}{\partial \theta_g}
+    \label{eq:g_parameter}
+\end{equation}
+\begin{equation}
+    \dot{\theta}_f = - k_{f} \frac{\partial \mathcal{F}}{\partial \theta_{f}} = k_{f} \frac{\varepsilon_f}{\Sigma_{x}}\frac{\partial f(\nu;\theta_f)}{\partial \theta_f}
+    \label{eq:f_parameter}
+\end{equation}
+
+For example, in the \citep{Rao1999} model the $g$ function was parametrised by the matrix $U$ (Eq. \ref{eq:pc_layer1}), while the $f$ function was parametrized by the matrix $U_\nu$ (Eq. \ref{eq:pc_layer2}), and the only difference from the current formulation is the presence in Eq. \ref{eq:pc_E_with_priors} of the priors on $\bm \mu$ and $U$. Writing the following generative model (i.e. joint probability density form) as follows, 
+\begin{equation}
+\begin{split}
+	p(\bm x, \bm s) &= p(\bm s | \bm x) p(\bm x) p(\bm \theta_g)\\ 
+	&= \mathcal{N}(\bm s; U \cdot \bm x, \Sigma_s) \mathcal{N}(\bm x; U_\nu \cdot \bm \nu, \Sigma_\nu) \mathcal{N}(\bm x; 0, \Sigma_x) \mathcal{N}(U; 0, \Sigma_U)
+\end{split}
+\end{equation}
+leads to a Laplace-encoded energy with the same form of the optimization function of Eq. \ref{eq:pc_E_with_priors}.
+
+While it is possible to update $\mu$ and $\theta$ simultaneously, as done in \citep{Rao1999}, it is often better to treat predictive coding as an EM algorithm \citep{Dempster1977}, optimizing $\mu$, with fixed $\theta_g$ and $\theta_f$ until close to convergence, and then run the updates on the parameters with fixed $\mu$ for a short while. 
+This implicitly enforces a separation of timescales upon the model where $\mu$ is seen as a dynamical variable which change quickly while the $\theta_g$ and $\theta_f$ are slowly changing parameters. It correspond on a mean-field approximation where the set of slowly changing parameters are treated as conditionally independent with respect to hidden states and sensory inputs. 
+
+\subsubsection{Dynamic Model}
+Biological agents rarely deal with stationary conditions, which is why it is important to be able to have generative models that can deal with dynamic environments: let us now formulate a possible implementation of inference in a dynamically changing environment.
+
+In order to describe a dynamical system, it is necessary to have at least two environmental variables: $x$ and its first-order derivative with respect to time, $\frac{dx}{dt} = x'$. Therefore, the agent must possess prior knowledge of the environmental state $x$ and also model its dynamics.
+
+In a dynamic case, the variable $x$ is typically allowed to vary without any boundary. Therefore, a flat prior, indicating zero prior knowledge, is usually associated with it and the dynamic of $x$ can be described using a Langevin-type equation:
+\begin{equation}
+\frac{d x}{dt} = f(x) + w_{x} \, .
+\label{eq:fx}
+\end{equation}
+
+Usually, in active inference literature, agent's internal representation of the various order of motion are indicated using the superscript, while how these variables are effectively updated during the free energy minimization process is indicated using the dot notation (for example, as we will see, the representation of the first order of an internal variable $\mu$ will be expressed with the term $\mu'$, while the temporal increment during the inference process of $\mu$ will be denoted with $\dot{\mu}$ and the temporal increment of $\mu'$ with $\dot{\mu}'$).
+
+As in the static case, is assumed that the agent believes its sensory input are generated in a similar manner with respect to Eq.(\ref{eq:input}), in particular
+\begin{equation}
+s(x) = g(x) + w_s \, .
+\label{eqn:s}
+\end{equation}
+
+Both $w_s$ and $w_{x}$ are again terms representing Gaussian noise with zero mean and variances respectively equal to $\Sigma_s$ and $\Sigma_{x}$. 
+
+The joint probability can then be written
+\begin{equation}
+p(x, x', s) = p(s|x) p(x'|x) p(x) = C \cdot \mathcal{N}(s;g(x),\Sigma_s) \mathcal{N}(x';f(x),\Sigma_{\dot{x}})
+\label{eq:joint_dynam}
+\end{equation}
+leading to a Laplace-encoded energy
+\begin{equation}
+\begin{split}
+L(\mu', \mu, s) &=  \frac{(s-g(\mu))^2}{2 \Sigma_{s}} + \frac{1}{2} \ln (2 \pi \Sigma_{s})+ \frac{(\mu'-f(\mu))^2}{2 \Sigma_{\mu}} + \frac{1}{2} \ln (2 \pi \Sigma_{\mu}) + C \\
+	&= \frac{\varepsilon_{s}^2}{2 \Sigma_{s}} + \frac{\varepsilon_{\mu}^2}{2 \Sigma_{\mu}} + \frac{1}{2} \ln (\Sigma_{s}\Sigma_{\mu}) + \ln(2 \pi) + C
+\end{split}
+\end{equation}
+and consequently an approximated variational free energy
+\begin{equation}
+    \mathcal{F} \approx \frac{\varepsilon_{s}^2}{2 \Sigma_{s}} + \frac{\varepsilon_{\mu}^2}{2 \Sigma_{\mu}} + \frac{1}{2} \ln (\Sigma_{s}\Sigma_{\mu})
+\end{equation}
+Here we have modified the notation for $\varepsilon_{x}$ and $\Sigma_x$ to $\varepsilon_{\mu}$ and $\Sigma_{\mu}$, respectively. This change was made because in generative models, one only needs to work with the expected values of the corresponding variables, which are never explicitly shown.
+
+\subsubsection{Generalised state-space model}
+To effectively represent complex dynamics of the generative process, it is possible to improve the agent’s model by using generalized coordinate of motion \citep{Friston2010a, Friston2008a} beyond the first order. 
+For example, if the brain represents beliefs about the position of an object, a generalized coordinates model would also include beliefs about its velocity, acceleration, jerk, and so on. However, this approach requires a departure from considering the dynamics of the system as a single stochastic equation with white noise. 
+
+Therefore, by representing the state of the dynamical system in terms of increasingly higher order derivatives of its state variables and employing a local linearity approximation on higher orders of motion\footnote{Without this approximation the model would scale-up very quickly becoming complicated and unwieldy fairly quickly. This approximation becomes exact when $f$ and $g$ are linear.} to suppress non-linear terms in the partial derivatives, it becomes possible to obtain
+\begin{equation}
+  \begin{split}
+    s &= g(x) + w_{s}(t) \\
+    s' &= \frac{\partial g(x)}{\partial x}x' + w_{s}' \\
+    s'' & \simeq \frac{\partial g(x)}{\partial x}x'' + w_{s}''\\
+    				& \qquad \vdots
+  \end{split}
+  \qquad
+  \begin{split}
+    x' &= f(x) + w_{x}(t) \\
+    x'' &= \frac{\partial f(x)}{\partial x}x' + w_{x}' \\
+    x''' & \simeq \frac{\partial f(x)}{\partial x}x'' + w_{x}''\\
+    				& \qquad \vdots
+  \end{split}
+\label{eq:hdm}
+\end{equation}
+where we have used the notation
+\begin{equation}
+s' = \frac{ds}{dt} \, , \qquad x'=\frac{dx}{dt} \, , \qquad s''= \frac{d^2 s}{dt^2} \, , \qquad x''= \frac{d^2 x}{dt^2} \, , \quad \dots
+\end{equation}
+and where $w_{s},w_{s}',w_{s}'',\dots, w_{x},w_{x}',w_{x}'',\dots$ are the noise sources at each dynamic order.
+Considering the previous linear approximation as equalities, Eq.(\ref{eq:hdm}) can be expressed in the more compact form
+\begin{equation}
+\tilde{s} = \tilde{g}(\tilde{x}) + \tilde{w_{s}} \quad , \quad D \tilde{x} = \tilde{f}(\tilde{x}) + \tilde{w_{x}}
+\end{equation}
+using the notation 
+\begin{equation}
+\begin{split}
+    &\tilde{s} = (s, s', s'', \dots) \\
+    &\tilde{x} = (x, x ', x '', \dots) \\
+    &D \tilde{x} = (x',x'',x''',\dots) \\
+    &\tilde{g}(\tilde{x}) = (g(x), \frac{\partial g(x)}{\partial x}x',  \frac{\partial g(x)}{\partial x}x'', \dots \\
+    &\tilde{f}(\tilde{x}) = (f(x), \frac{\partial f(x)}{\partial x}x',  \frac{\partial f(x)}{\partial x}x'', \dots 
+\end{split}
+\end{equation}
+
+\paragraph{Considerations about noise terms}
+As seen in Appendix \ref{Appendix_stochastic}, a differentiable Gaussian stochastic process $W$ with zero mean, $\Sigma_w$ variance and auto-correlation function $\rho (h) \equiv <W(t+h)W(T)>_s$, can be written as a multivariate Gaussian distribution with covariance matrix (Eq. \ref{eq:col_noise_cov})
+\begin{equation}
+    \tilde{\Sigma} = 
+    \begin{bmatrix}
+    \Sigma & 0 & \rho''(0) & \dots \\
+    0 & -\rho''(0) & 0 & \\
+    \rho''(0) & 0 & \rho''''(0) \\
+    \vdots & & & \ddots
+    \end{bmatrix}
+\end{equation}
+with $\rho''(0)$ second derivative of the auto-correlation function of the fluctuations, evaluated at zero, that is a ubiquitous measure of roughness in the theory of stochastic processes \citep{Cox1977}. 
+Note that when noise terms at different order are uncorrelated, the curvature (and higher derivatives) of the auto-correlation becomes large (i.e. $\rho''(0) \rightarrow \infty$). In this instance, the variances of the temporal derivatives fall to zero and the variational energy is determined by, and only by, the magnitude of the prediction errors on the causes and the first-order motion of the hidden states. This limiting case is assumed by conventional state-space models used in Bayesian filtering; it corresponds to the assumption that the fluctuations are independent\footnote{This correspond to a purely diffusion process, like the Wiener process. This case is also called white noise scenario}. Although, this is a convenient assumption for conventional schemes and appropriate for physical systems with Brownian processes, it is less plausible for biological and other systems, where random fluctuations are themselves the product of other dynamical systems.
+For convenience then, in \citep{Friston2008a} it is assumed that the noise correlation is due to a Gaussian filter 
+\begin{equation}
+    S(\gamma) = 
+    \begin{bmatrix}
+    1 & 0 & - \frac{1}{2} \gamma & \dots \\
+    0 & \frac{1}{2} \gamma & 0 & \\
+    - \frac{1}{2} \gamma & 0 & \frac{3}{4} \gamma^2 \\
+    \vdots & & & \ddots
+    \end{bmatrix}
+\end{equation}
+where $\gamma$ is the precision (inverse variance) parameter of the filter, which increases with roughness. Assuming zero cross-correlation between $\tilde{w}_s$ and $\tilde{w}_{\mu}$, the final covariance matrices of the noise terms will be then 
+\begin{equation}
+    \tilde{\Sigma}_s = S(\gamma)\Sigma_s \quad  \tilde{\Sigma}_{\mu} = S(\gamma)\Sigma_{\mu} 
+\end{equation}
+Typically, $\gamma > 1$, which ensures the variances of higher-order derivatives to diverge quickly. This is important because it enables us to truncate the representation in generalised coordinates to a relatively low order (6 orders are sufficient for most systems, but truncating to second-order generally doesn't lead to an accuracy loss)
+
+The variational free energy in the generalised state-space model, will then be approximated by
+\begin{equation}
+    \mathcal{F} = \frac{1}{2}\tilde{\varepsilon}_s^T \tilde{\Pi}_s \tilde{\varepsilon}_s + \frac{1}{2}\tilde{\varepsilon}_{\mu}^T \tilde{\Pi}_{\mu} \tilde{\varepsilon}_{\mu} + \frac{1}{2} \ln(\det \tilde{\Sigma}_s \det \tilde{\Sigma}_{\mu})
+\end{equation}
+with $\tilde{\varepsilon}_s = \tilde{s} - \tilde{g}(\tilde{\mu})$, $\tilde{\varepsilon}_{\mu} = D\tilde{\mu} - \tilde{f}(\tilde{\mu})$, $\tilde{\Pi}_s = \tilde{\Sigma}_s^{-1}$ and $\tilde{\Pi}_{\mu} = \tilde{\Sigma}_{\mu}^{-1}$.
+
+Now, last thing remaining is the minimization process. It has been shown \citep{Friston2008} that the optimal (equilibrium) solution can be reached through the (modified) gradient descend
+\begin{equation}
+    \tilde{\mu}^{t+\Delta t} = \tilde{\mu}^{t} + D\tilde{\mu} - k_{\mu} \frac{\partial \mathcal{F}}{\partial \tilde{\mu}}
+\end{equation}
+This adjustment can be understood considering that, since we are minimizing the components of a generalised state representing a trajectory rather than a static state, variables are in a moving framework of reference, and the minimization is achieved for $\dot{\tilde{\mu}} = D \tilde{\mu}$, rather than for $\dot{\tilde{\mu}} = 0$ (condition required in standard state-space formulations).  
+
+\subsection{Multi-layer models}
+The concepts discussed thus far can be further expanded upon by incorporating a hierarchical structure into the generative model. As demonstrated in the basic model of \citep{Rao1999} (Sec. \ref{sec:rao_model}), even a single layer was able to expand receptive fields. By adding more layers, drawing inspiration from the cortical hierarchical organization, it becomes feasible to encode complex abstractions and effectively manage inherently hierarchical dynamics, similar to how humans naturally perceive them.
+
+Regarding the implementation of an upper layer, the same reasoning can be applied as for the development of the generative model discussed thus far. One can begin with a static model, which involves a specific probability distribution on the internal variables of the model. 
+Alternatively, one can develop a second dynamical model that aims to infer the state of the preceding layer. 
+
+Indicating with $x^{(1)}$ the first layer hidden state, $v$ the \emph{hidden cause}\footnote{It has the same role of model parameters of Eq. \ref{eq:g_parameter} and \ref{eq:f_parameter}}, and with $x^{(2)}$ the hidden state of the second layer, we can rewrite the generative model as follow
+\begin{equation}
+    \begin{split}
+        s(x^{(1)}, v) &= g^{(1)}(x^{(1)}, v) + w_{s} \\
+        \frac{d x^{(1)}}{dt} &= f^{(1)}(x^{(1)}, v) + w_{x^{(1)}} \\
+        v(x^{(2)}) &= g^{(2)}(x^{(2)}) + w_v \\
+        \frac{d x^{(2)}}{dt} &= f^{(2)}(x^{(2)}) + w_{x^{(2)}}
+    \end{split}
+\end{equation}
+leading to the approximated variational free energy (Here again we have substituted for the various $x$ and $v$ the corresponding mean values $\mu$ and $\nu$ in the notation)
+\begin{equation}
+\begin{split}
+    \mathcal{F} = &\frac{1}{2}\varepsilon_s^T \Pi_s \varepsilon_s + \frac{1}{2}\varepsilon_{\mu^{(1)}}^T \Pi_{\mu^{(1)}} \varepsilon_{\mu^{(1)}} + \frac{1}{2}\varepsilon_\nu^T \Pi_\nu \varepsilon_\nu + \frac{1}{2}\varepsilon_{\mu^{(2)}}^T \Pi_{\mu^{(2)}} \varepsilon_{\mu^{(2)}} \\
+    & + \frac{1}{2} \ln(\det \Sigma_s \det \Sigma_{\mu^{(1)}} \det \Sigma_{\nu} \det \Sigma_{\mu^{(2)}})
+\end{split}
+\end{equation}
+and to the minimization process
+\begin{equation}
+\begin{split}
+    \dot{\mu}^{(1)} &= \mu'^{(1)} - k_{\mu^{(1)}} \left[ -\frac{\varepsilon_s}{\Sigma_s}\frac{\partial g^{(1)}}{\partial \mu^{(1)}} - \frac{\varepsilon_{\mu^{(1)}}}{\Sigma_{\mu^{(1)}}} \frac{\partial f^{(1)}}{\partial \mu^{(1)}}\right] \\
+    \dot{\mu'}^{(1)} &= -k_{{\mu'}^{(1)}} \frac{\varepsilon_{\mu^{(1)}}}{\Sigma_{\mu^{(1)}}} \\
+    \dot{\nu} &= -k_\nu \left[ -\frac{\varepsilon_s}{\Sigma_s}\frac{\partial g^{(1)}}{\partial \nu} - \frac{\varepsilon_{\mu^{(1)}}}{\Sigma_{\mu^{(1)}}} \frac{\partial f^{(1)}}{\partial \nu} + \frac{\varepsilon_nu}{\Sigma_nu} \right] \\
+    \dot{\mu}^{(2)} &= \mu'^{(2)} - k_{\mu^{(2)}} \left[ -\frac{\varepsilon_\nu}{\Sigma_\nu}\frac{\partial g^{(2)}}{\partial \mu^{(2)}} - \frac{\varepsilon_{\mu^{(2)}}}{\Sigma_{\mu^{(1)}}} \frac{\partial f^{(2)}}{\partial \mu^{(2)}} \right] \\
+    \dot{\mu'}^{(2)} &= -k_{{\mu'}^{(2)}} \frac{\varepsilon_{\mu^{(2)}}}{\Sigma_{\mu^{(2)}}} 
+\end{split}
+\end{equation}
+We see that the dynamics for the variational means $\mu$ depend only on the prediction errors at their layer and the prediction errors on the level below. Intuitively, we can think of the $\mu$ as trying to find a compromise between causing error by deviating from the prediction from the layer above, and adjusting their own prediction to resolve error at
+the layer below. In a neurally-implemented hierarchical predictive coding network, prediction errors would be the only information transmitted upwards from sensory data towards latent representations, while  predictions would be transmitted downwards. 
+
+let us conclude the section observing that these models have the potential for further expansion by incorporating generalized state-space models into multiple layers. Additionally, employing a mean-field approximation with slower time scales could enable the model to learn the different covariance matrices.
+
+\subsection{Action}
+\label{sec:action}
+So far, we have considered what happens when we perform inference, hence selecting the model on the basis of its capacity to minimize surprise (or equivalently, maximize model evidence of Eq. \ref{eq:fe_formulations}). However, surprise does not only depend on the model, but it also depends on the data. By acting on the world to change the way in which data are generated, we can ensure a model is fit for purpose by choosing those data that are least surprising under our model.
+In particular, in active inference, action is described as a problem of optimal control that essentially mirrors perception by changing observations $s$ to better match expected hidden states $\mu$. This process is based on the general assumption that, from the perspective of an agent, observations $s$ are affected by actions $a$ ($s$ is a function of $a \, \Rightarrow \, s(a)$).
+
+Action is then performed with the objective of consistently minimizing the same cost function, namely the variational free energy.
+
+\begin{equation}
+    \dot{a} = - k_a \frac{\partial \mathcal{F}}{\partial a} = -k_a \frac{\partial \mathcal{F}}{\partial s} \frac{\partial s}{\partial a} 
+    \label{eq:action}
+\end{equation}
+This assumption is proposed to address a well-known issue in motor systems and control theory, namely the redundancy of effective movements (Franklin, 2011). Inverting a forward model to determine the action or policy (sequence of action) responsible for a given observation \citep{Kawato1999} can often lead to an ill-posed problem, as there can be multiple possible actions that could have generated a single observation. In active inference, this inverse model is divided into two sub-problems based on intrinsic (bodily) and extrinsic (environmental) frames of reference \citep{Friston2011}.
+In the intrinsic frame, it is suggested that a significant portion of the control problem can be solved by predicting proprioceptive sensations in a similar manner to exteroceptive sensations. This involves using observations and a generative model of their dynamics to estimate the state of proprioceptive sensations (in Eq. \ref{eq:action} the term $\frac{\partial \mathcal{F}}{\partial s}$). 
+On the other hand, the extrinsic problem in external coordinates is addressed by establishing simple heuristic mappings between proprioceptive estimates and observations, which can be implemented as low-level reflexes (in Eq. \ref{eq:action} the term $\frac{\partial s}{\partial a}$). . 
+This separation allows the generative model to handle the majority of the control task, including the generation of proprioceptive state predictions, while reflex arcs are assumed to be solved by agents over an evolutionary timescale \citep{Friston2010b}. This perspective heavily relies on proprioception, which is often studied and assumed to exist only in complex organisms. However, the concept of simple reflexes driving behavior can also be applicable to simpler organisms, where proprioceptive predictions could be attributed to even basic chemical networks triggering reflexes, such as tumbling in bacteria.
+
+One could argue that Eq. \ref{eq:action} still represents an inverse model, as it aims to find the appropriate action for a desired output. However, unlike traditional approaches, active inference does not involve a mapping from hidden states $x$ to actions $a$. Instead, it is formulated in terms of sensory data $s$ directly. This implementation aligns with sensorimotor accounts of agent-environment systems, where action is fundamentally grounded in an extrinsic frame of reference \citep{Buhrmann2014}, i.e., the real world $s$, rather than an intrinsic one based on inferred hidden states $x$ obtained by inverting an internal forward model.
+
+\end{document}
